@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
 
 export default function TabsIndex() {
-  return <Redirect href="/(tabs)/history" />;
+  return <Redirect href="/(tabs)/progress" />;
 }

@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PostHogProvider, usePostHog } from 'posthog-react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { SettingsProvider } from '@/contexts/settings-context';
 import { Colors } from '@/constants/theme';
 import { analyticsService } from '@/services/analytics';
 
@@ -77,15 +78,18 @@ export default function RootLayout() {
   const appContent = (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider value={AppTheme}>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}>
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-          <StatusBar style="dark" />
-        </ThemeProvider>
+        <SettingsProvider>
+          <ThemeProvider value={AppTheme}>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}>
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+            </Stack>
+            <StatusBar style="dark" />
+          </ThemeProvider>
+        </SettingsProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

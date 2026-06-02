@@ -12,4 +12,20 @@ export abstract class BaseAnalyticsService implements AnalyticsService {
   appOpened(): void {
     this.track('app_opened');
   }
+
+  sessionLogged(props: {
+    exercise_count: number;
+    set_count: number;
+    from_split: boolean;
+  }): void {
+    this.track('session_logged', props);
+  }
+
+  sessionDeleted(): void {
+    this.track('session_deleted');
+  }
+
+  exerciseProgressViewed(props: { data_points: number }): void {
+    this.track('exercise_progress_viewed', props);
+  }
 }

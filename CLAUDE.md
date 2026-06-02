@@ -4,9 +4,11 @@ This file is read automatically by Claude Code. Follow these practices when edit
 
 ## Project overview
 
-**WeightTracker** is a workout-tracking app. The MVP feature set is still being defined — the
-repository currently contains the shared infrastructure (navigation shell, theming, storage,
-API/server, analytics) and minimal placeholder screens. Build features on top of this scaffold.
+**WeightTracker** is a strength-training app centered on **progressive overload** — making it easy
+to see whether weight/reps/volume on each exercise is trending up. Core flow: log a session (splits
+→ free-typed exercises → sets of weight × reps) → review it in History → track per-exercise trends
+and charts in Progress. All data is local (AsyncStorage); units (lb/kg) are switchable. See
+`docs/features/mvp-strength-tracker-2026-06-01.md`.
 
 ## Tech stack
 
@@ -23,7 +25,8 @@ API/server, analytics) and minimal placeholder screens. Build features on top of
 
 ```
 app/              # Expo Router routes (screens)
-  (tabs)/         # Main tab screens (history, log, settings)
+  (tabs)/         # 3 tabs: progress (home), log (center +), history
+  settings.tsx    # Settings, presented as a root modal (gear icon in headers)
   api/            # Server endpoints via Expo's +api.ts convention
 components/
   ui/             # Primitive themed components (ThemedText, ThemedView, IconSymbol)
@@ -45,11 +48,19 @@ constants/        # Theme colors and fonts
 docs/features/    # One feature doc per feature/commit
 ```
 
-## State management & persistence
+## Domain model & persistence
 
-- **Persistence:** `AsyncStorageWorkoutRepository` (`services/storage/`) implements the
-  `WorkoutRepository` interface. Always go through the interface, not AsyncStorage directly.
-- `types/workout.ts` holds the core domain types — expand them as the MVP grows; don't use `any`.
+- Types live in `types/`: `Session` → `ExerciseEntry` → `SetEntry` (`session.ts`), plus `Split`,
+  `Exercise`, `Unit`, `AppSettings`. Weights are stored canonically in **kg** (`weightKg`, `null` =
+  bodyweight) and converted for display via `utils/units.ts` — never store display-unit numbers.
+- **Persistence:** one repository per aggregate in `services/storage/` (`session`, `split`,
+  `exercise`, `settings`), each an interface + `AsyncStorage…` impl, exposed as singletons from
+  `services/storage/index.ts`. Always go through the interface, not AsyncStorage directly.
+  `exerciseRepository.upsertByName` keeps free-typed exercise names consistent for charting.
+- **Progressive-overload math** is in `utils/overload.ts` (Epley 1RM, top set, volume, trend) — keep
+  analytics/chart logic there, not in screens.
+- **State:** `useSettings` (unit), and hooks `use-sessions`, `use-exercise-catalog`,
+  `use-session-draft` (the Log form reducer).
 
 ## Server / API architecture
 
@@ -110,5 +121,6 @@ npx expo start      # start the dev server
 
 - Introduce a different router/navigation library; stick to expo-router.
 - Use server-only env vars in client-side code.
-- Bypass the `WorkoutRepository` interface by calling AsyncStorage directly.
+- Bypass the storage repository interfaces by calling AsyncStorage directly.
+- Store weights in display units — always persist canonical `weightKg` and convert with `utils/units.ts`.
 - Hard-code an LLM provider — always go through the `LLMClient` abstraction.
