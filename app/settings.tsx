@@ -6,6 +6,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import { ThemedText } from '@/components/ui/themed-text';
 import { ThemedView } from '@/components/ui/themed-view';
 import { Colors } from '@/constants/theme';
+import { useAuth } from '@/contexts/auth-context';
 import { useSettings } from '@/contexts/settings-context';
 import type { Unit } from '@/types/units';
 
@@ -17,6 +18,7 @@ const UNIT_OPTIONS: { label: string; value: Unit }[] = [
 export default function SettingsScreen() {
   const router = useRouter();
   const { unit, setUnit } = useSettings();
+  const { user, signOut } = useAuth();
 
   return (
     <ThemedView className="flex-1">
@@ -44,10 +46,13 @@ export default function SettingsScreen() {
         <View
           className="mt-8 rounded-2xl p-4"
           style={{ backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border }}>
-          <ThemedText type="defaultSemiBold">WeightTracker</ThemedText>
+          <ThemedText type="defaultSemiBold">Account</ThemedText>
           <ThemedText className="mt-1" style={{ color: Colors.muted, fontSize: 13 }}>
-            All data is stored locally on this device.
+            {user?.email ? `Signed in as ${user.email}` : 'Not signed in'}
           </ThemedText>
+          <Pressable onPress={signOut} className="mt-3 self-start">
+            <ThemedText style={{ color: '#DC2626' }}>Sign out</ThemedText>
+          </Pressable>
         </View>
       </SafeAreaView>
     </ThemedView>

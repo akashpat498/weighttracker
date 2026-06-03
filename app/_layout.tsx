@@ -8,7 +8,7 @@ import {
 } from '@expo-google-fonts/ibm-plex-mono';
 import { DarkTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
@@ -17,6 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { PostHogProvider, usePostHog } from 'posthog-react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { SettingsProvider } from '@/contexts/settings-context';
 import { Colors } from '@/constants/theme';
 import { analyticsService } from '@/services/analytics';
@@ -57,6 +58,38 @@ function PostHogBridge() {
   return null;
 }
 
+/**
+ * Renders the navigation stack and enforces the auth gate: signed-out users are
+ * redirected to /login; signing in (or out) moves them to/from the tabs.
+ */
+function RootNavigator() {
+  const { session, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading) SplashScreen.hideAsync();
+  }, [loading]);
+
+  useEffect(() => {
+    if (loading) return;
+    const onLogin = segments[0] === 'login';
+    if (!session && !onLogin) {
+      router.replace('/login');
+    } else if (session && onLogin) {
+      router.replace('/(tabs)');
+    }
+  }, [session, loading, segments, router]);
+
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+    </Stack>
+  );
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     IBMPlexMono_400Regular,
@@ -65,12 +98,7 @@ export default function RootLayout() {
     IBMPlexMono_700Bold,
   });
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded, fontError]);
-
+  // Splash is hidden by RootNavigator once the auth session is resolved.
   if (!fontsLoaded && !fontError) {
     return null;
   }
@@ -79,16 +107,12 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <SettingsProvider>
-          <ThemeProvider value={AppTheme}>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-              }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
-            </Stack>
-            <StatusBar style="dark" />
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider value={AppTheme}>
+              <RootNavigator />
+              <StatusBar style="dark" />
+            </ThemeProvider>
+          </AuthProvider>
         </SettingsProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
